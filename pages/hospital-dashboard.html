@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Dashboard</title>
+    <link rel="stylesheet" href="../css/hospital.css">
+</head>
+
+<body>
+    <header>
+        <h1>Hospital Dashboard</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../pages/driver-dashboard.html" class="btn">Driver Dashboard</a></li>
+            <li><a href="../index.html" class="btn">Home</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <div class="emergency-request">
+            <h2>Emergency Requests</h2>
+            <p id="emergency-info">No emergency request at the moment.</p>
+            <button class="btn" id="accept-btn">Accept</button>
+            <button class="btn" id="reject-btn">Reject</button>
+        </div>
+
+        <div class="update-status">
+            <h2>Update Emergency Status</h2>
+            <form id="status-form">
+                <label for="status">Emergency Status:</label>
+                <select id="status" name="status" required>
+                    <option value="On the way">On the way</option>
+                    <option value="At the hospital">At the hospital</option>
+                </select>
+                <button type="submit" class="btn">Update Status</button>
+            </form>
+        </div>
+
+        <div class="complete-emergency">
+            <h2>Complete Emergency Request</h2>
+            <button class="btn" id="complete-btn">Mark as Completed</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 RESQLINKER Service</p>
+    </footer>
+
+    <script src="../js/hospital.js"></script>
+</body>
+
+</html>
+

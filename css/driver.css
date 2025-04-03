@@ -1,0 +1,167 @@
+You can update the CSS to arrange the forms in a column with a small gap between them,
+and wrap the forms inside a box with circular edges. Here's the updated CSS:
+
+```css
+
+/* Reset and Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Body Styling */
+body {
+    text-align: center;
+    background-image: url('../images/driverbg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    background-color: rgba(20, 150, 50, 0.5);
+    color: white;
+    padding: 20px;
+    font-size: large;
+}
+
+/* Navigation */
+nav ul {
+    list-style: none;
+    padding: 20px;
+}
+
+nav li {
+    display: inline;
+    margin-right: 15px;
+}
+
+nav a {
+    padding: 10px 15px;
+    background-color: #333;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+nav a:hover {
+    background-color: #555;
+}
+
+/* Logout Button Styling */
+#logout-btn {
+    background-color: #dc3545;
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease-in-out;
+    font-size: 16px;
+    margin-left: 20px;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
+}
+
+/* Profile Section */
+.profile,
+.vehicle-info,
+.active-ride,
+.availability-status,
+.ongoing-trip {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 15px;
+    /* Circular edges */
+    width: 80%;
+    /* Adjust width to ensure it’s centered and not too wide */
+    max-width: 600px;
+    /* Maximum width */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profile h2,
+.vehicle-info h2,
+.active-ride h2,
+.availability-status h2,
+.ongoing-trip h2 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.profile form,
+.vehicle-info form,
+.active-ride form,
+.availability-status form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* Small gap between form fields */
+}
+
+/* Input and Button Styling */
+.profile input,
+.vehicle-info input,
+.active-ride input,
+.availability-status input {
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    /* Make inputs stretch across the form */
+}
+
+.profile button,
+.vehicle-info button,
+.active-ride button,
+.availability-status button,
+#availability-btn,
+#start-trip-btn {
+    padding: 12px 24px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease-in-out;
+    font-size: 16px;
+}
+
+.profile button:hover,
+.vehicle-info button:hover,
+.active-ride button:hover,
+.availability-status button:hover,
+#availability-btn:hover,
+#start-trip-btn:hover {
+    background-color: #218838;
+}
+
+/* Ongoing Trip Section */
+.ongoing-trip {
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#trip-details p {
+    font-size: 1em;
+    margin-bottom: 10px;
+}
+
+/* Footer */
+footer {
+    background-color: rgba(34, 34, 34, 0.8);
+    color: white;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+`

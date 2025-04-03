@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard</title>
+    <link rel="stylesheet" href="../css/driver.css">
+</head>
+
+<body>
+    <header>
+        <h1>Driver Dashboard</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../pages/hospital-dashboard.html" class="btn">Hospital Dashboard</a></li>
+            <li><a href="../index.html" class="btn">Home</a></li>
+            <li><button class="btn" id="logout-btn">Logout</button></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- Profile Section -->
+    <section class="profile">
+        <h2>Profile</h2>
+        <form id="profile-form">
+            <label for="driver-name">Name:</label>
+            <input type="text" id="driver-name" name="name" placeholder="Enter your name" required>
+    
+            <label for="driver-contact">Contact:</label>
+            <input type="text" id="driver-contact" name="contact" placeholder="Enter your contact number" required>
+    
+            <label for="driver-email">Email:</label>
+            <input type="email" id="driver-email" name="email" placeholder="Enter your email" required>
+    
+            <button type="submit" class="btn">Save Profile</button>
+        </form>
+    </section>
+
+        <!-- Vehicle Information Section -->
+    <section class="vehicle-info">
+        <h2>Vehicle Information</h2>
+        <form id="vehicle-info-form">
+            <label for="vehicle-make">Make:</label>
+            <input type="text" id="vehicle-make" name="make" placeholder="Enter your vehicle's make" required>
+    
+            <label for="vehicle-model">Model:</label>
+            <input type="text" id="vehicle-model" name="model" placeholder="Enter your vehicle's model" required>
+    
+            <label for="vehicle-reg">Registration Number:</label>
+            <input type="text" id="vehicle-reg" name="registration" placeholder="Enter your vehicle's registration number"
+                required>
+    
+            <button type="submit" class="btn">Save Vehicle Info</button>
+        </form>
+</section>
+        <!-- Active Ride Section -->
+    <section class="active-ride">
+        <section class="vehicle-info">
+            <h2>Vehicle Information</h2>
+            <form id="vehicle-info-form">
+                <label for="vehicle-make">Make:</label>
+                <input type="text" id="vehicle-make" name="make" placeholder="Enter your vehicle's make" required>
+                
+                <label for="vehicle-model">Model:</label>
+                <input type="text" id="vehicle-model" name="model" placeholder="Enter your vehicle's model" required>
+                
+                <label for="vehicle-reg">Registration Number:</label>
+                <input type="text" id="vehicle-reg" name="registration" placeholder="Enter your vehicle's registration number" required>
+                
+                <button type="submit" class="btn">Save Vehicle Info</button>
+            </form><h2>Active Ride</h2>
+        <form id="active-ride-form">
+            <label for="pickup-location">Pickup Location:</label>
+            <input type="text" id="pickup-location" name="pickup-location" placeholder="Enter pickup location" required>
+    
+            <label for="passenger-name">Passenger Name:</label>
+            <input type="text" id="passenger-name" name="passenger-name" placeholder="Enter passenger's name" required>
+    
+            <button type="submit" class="btn">Update Active Ride</button>
+        </form>
+    </section>
+
+        <!-- Availability Status Section -->
+        <section class="availability-status">
+            <h2>Availability Status</h2>
+            <button id="availability-btn" class="btn">Available</button>
+        </section>
+
+        <!-- Ongoing Trip Section -->
+        <section class="ongoing-trip">
+            <h2>Ongoing Trip</h2>
+            <div id="trip-details">
+                <p><strong>Route:</strong> <span id="route">Not Available</span></p>
+                <p><strong>ETA:</strong> <span id="eta">Not Available</span></p>
+                <p><strong>Location:</strong> <span id="location">Updating...</span></p>
+            </div>
+            <button id="start-trip-btn" class="btn">Start Trip</button>
+            
+        </section>
+
+        <!-- Emergency Request Actions -->
+        <section class="action-buttons">
+            <button class="btn">Accept Emergency Request</button>
+            <button class="btn">Track Patient Location</button>
+            <button class="btn">Notify Patient of Arrival</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 RESQLINKER Service</p>
+    </footer>
+
+    <script src="../js/driver.js"></script>
+</body>
+
+</html>

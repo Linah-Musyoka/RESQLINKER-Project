@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="../css/patient.css">
+</head>
+
+<body>
+    <header>
+        <h1>Patient Dashboard</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="../pages/driver-dashboard.html" class="btn">Driver Dashboard</a></li>
+            <li><a href="../index.html" class="btn">Home</a></li>
+            <li><a href="../index.html" class="btn" id="logout-btn">Logout</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- Profile Section -->
+        <section class="profile">
+            <h2>Profile</h2>
+            <form>
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+        
+                <button type="submit" class="btn">Save Profile</button>
+            </form>
+        </section>
+        <!-- Emergency Button Section -->
+        <section class="emergency-section">
+            <h2>Emergency</h2>
+            <button class="btn">Request Emergency Ride</button>
+        </section>
+
+        <!-- Ride Status Section -->
+        <section class="ride-status">
+            <h2>Ride Status</h2>
+            <p>Current Ride: Not Started</p>
+        </section>
+
+        <!-- Book Ride Section -->
+        <section class="book-ride">
+            <h2>Book Ride</h2>
+            <button class="btn">Book a Ride</button>
+        </section>
+
+        <!-- Emergency Form Section -->
+        <section class="emergency-form">
+            <h2>Emergency Form</h2>
+            <form>
+                <label for="patient-name">Full Name:</label>
+                <input type="text" id="patient-name" name="name" placeholder="Enter your full name" required>
+
+                <label for="allergies">Allergies:</label>
+                <input type="text" id="allergies" name="allergies" placeholder="Enter your allergies" required>
+
+                <label for="emergency-details">Emergency Details:</label>
+                <textarea id="emergency-details" name="emergency-details" placeholder="Provide details of the emergency"
+                    required></textarea>
+
+                <button type="submit" class="btn">Submit Emergency Form</button>
+            </form>
+        </section>
+
+        <!-- Location Section -->
+        <div class="location-section">
+            <h2>Current Location</h2>
+            <p id="current-location">Loading your location...</p>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>&copy; 2025 RESQLINKER Service</p>
+    </footer>
+    <script src="../js/driver.js"></script>
+</body>
+
+</html>

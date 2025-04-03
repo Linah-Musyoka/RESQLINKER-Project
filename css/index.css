@@ -1,0 +1,96 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+}
+
+body {
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0%;
+    box-sizing: border-box;
+   
+}
+header {
+    background-color: rgba(17, 223, 86, 0.5);
+    color: white;
+    padding: 20px;
+    font-size:large;
+}
+
+nav a {
+    color: black;
+    text-decoration: none;
+    margin-left: 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+    
+}
+
+nav a:hover {
+    color: #0000ff;
+
+}
+
+.Champ {
+    margin: 50px 50;
+    padding: 20px;
+    background-image: url(../images/background.jpg);
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    position: relative;
+    color: white;
+
+}
+
+.Champ::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 05, 0, 0.5);
+    z-index: 1;
+
+}
+
+.Champ h2 {
+    position: relative;
+    z-index: 1;
+}
+
+.Champ p {
+    position: relative;
+    z-index: 1;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: rgba(56, 33, 105, 0.5);
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 10px 50;
+    transition: background-color 0.3s ease-in-out, transform 0.3s ease-in;
+    position: relative;
+    z-index: 3;
+}
+
+.btn:hover {
+    background-color:blue;
+    transform: scale(1.05);
+}
+
+footer {
+    background-color: #222;
+    color: white;
+    padding: 10px;
+    margin-top: 50px 50;
+    position: relative;
+   z-index: 2;
+}

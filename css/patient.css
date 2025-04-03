@@ -1,0 +1,190 @@
+/* Reset and Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    align-items: center;
+}
+
+/* Body Styling */
+body {
+    text-align: center;
+    background-color: #eaf6ff;
+    background-image: url('../images/patient.jpg'), linear-gradient(to bottom, rgba(0, 0, 0, 0.8), grey);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: white;
+    /* Changed text color to white for all text */
+}
+
+/* Header Styling */
+header {
+    background-color: rgba(40, 167, 69, 0.7);
+    /* Green color for header */
+    color: white;
+    padding: 20px;
+    font-size: large;
+    border-radius: 15px;
+    /* Circular edges */
+    margin-bottom: 20px;
+}
+
+/* Header Class for Consistency */
+header h1 {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Navigation Styling */
+nav ul {
+    list-style: none;
+    padding: 10px;
+}
+
+nav li {
+    display: inline;
+    margin-right: 15px;
+}
+
+nav a {
+    padding: 10px 15px;
+    background-color: #333;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+nav a:hover {
+    background-color: #1809ea;
+}
+
+/* Profile Section */
+.profile-container {
+    background-color: white;
+    border-radius: 15px;
+    /* Circular edges */
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    /* Adjust max width so it doesn't cover the entire page */
+    margin: 20px auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: black;
+    /* Ensures form text remains black for readability */
+    text-align: left;
+}
+
+/* Form Styling */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* Small gap between form elements */
+}
+
+/* Form Input Fields */
+input[type="text"],
+input[type="email"],
+textarea {
+    padding: 10px;
+    border: #222;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    /* Circular edges for input fields */
+    font-size: 16px;
+    width: 80%;
+    box-sizing: border-box;
+}
+
+/* Button Styling */
+button.btn {
+    padding: 12px 24px;
+    background-color: #28a745;
+    /* Green button color */
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    /* Circular edges for buttons */
+    transition: background-color 0.3s ease-in-out;
+    font-size: 16px;
+    width: 100%;
+}
+
+button.btn:hover {
+    background-color: #218838;
+    /* Darker green on hover */
+}
+
+/* Logout Button */
+#logout-btn {
+    background-color: #dc3545;
+    /* Red color for logout button */
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    /* Circular edges */
+    transition: background-color 0.3s ease-in-out;
+    font-size: 16px;
+    width: 100%;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
+    /* Darker red on hover */
+}
+
+/* Footer Styling */
+footer {
+    background-color: #222;
+    color: white;
+    padding: 10px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .profile-container {
+        width: 80%;
+        padding: 15px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    textarea {
+        font-size: 14px;
+    }
+
+    button.btn {
+        font-size: 14px;
+    }
+
+    #logout-btn {
+        font-size: 14px;
+    }
+}
+/* Location Section Styling */
+.location-section {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.location-section h2 {
+    font-size: 1.5em;
+    color: #333;
+}
+
+.location-section p {
+    font-size: 1.2em;
+    color: #555;
+}
