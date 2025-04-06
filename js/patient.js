@@ -1,4 +1,4 @@
-// patient.js - Optimized and Enhanced
+// patient.js - Complete Optimized Version
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
 import { 
   getFirestore, doc, getDoc, updateDoc, setDoc,
@@ -50,8 +50,9 @@ const errorMessages = {
   permission: "You don't have permission for this action."
 };
 
-// Auth State Listener
-onAuthStateChanged(auth, handleAuthStateChange);
+// ======================
+// 1. Core Functions
+// ======================
 
 async function handleAuthStateChange(user) {
   if (!user) {
@@ -70,7 +71,6 @@ async function handleAuthStateChange(user) {
   }
 }
 
-// Patient Data Management
 async function loadPatientData(uid) {
   const docRef = doc(db, "Patients", uid);
   const docSnap = await getDoc(docRef);
@@ -84,29 +84,10 @@ async function loadPatientData(uid) {
   }
 }
 
-async function initializePatient(uid) {
-  const user = auth.currentUser;
-  await setDoc(doc(db, "Patients", uid), {
-    uid: uid,
-    username: user.displayName || '',
-    email: user.email || '',
-    createdAt: serverTimestamp(),
-    status: "inactive",
-    profileComplete: false,
-    location: null
-  });
-}
+// ======================
+// 2. Emergency System
+// ======================
 
-async function saveInitialProfile(uid) {
-  await updateDoc(doc(db, "Patients", uid), {
-    username: auth.currentUser.displayName || 'New Patient',
-    email: auth.currentUser.email || '',
-    profileComplete: true,
-    lastUpdated: serverTimestamp()
-  });
-}
-
-// Emergency System
 async function handleEmergencyRequest() {
   const confirmEmergency = confirm("This will notify available drivers. Continue?");
   if (!confirmEmergency) return;
@@ -136,14 +117,12 @@ async function assignNearestDriver(patientLocation) {
   const batch = writeBatch(db);
   const rideRef = doc(collection(db, "Rides"));
   
-  // Update driver
   batch.update(doc(db, "Drivers", nearestDriver.id), {
     availability: false,
     currentPatient: currentUser.uid,
     lastAssignmentTime: serverTimestamp()
   });
   
-  // Update patient
   batch.update(doc(db, "Patients", currentUser.uid), {
     assignedDriver: nearestDriver.id,
     assignedDriverName: nearestDriver.username,
@@ -152,7 +131,6 @@ async function assignNearestDriver(patientLocation) {
     currentRideId: rideRef.id
   });
   
-  // Create ride record
   batch.set(rideRef, {
     patientId: currentUser.uid,
     driverId: nearestDriver.id,
@@ -166,37 +144,9 @@ async function assignNearestDriver(patientLocation) {
   startETACountdown(nearestDriver.eta);
 }
 
-async function calculateDriverETAs(drivers, patientLocation) {
-  return await Promise.all(drivers.map(async driver => {
-    const eta = await calculateETA(patientLocation, driver.location);
-    return { ...driver, eta };
-  }));
-}
-
-async function calculateETA(patientLoc, driverLoc) {
-  // Simple distance calculation (mock)
-  const distance = Math.sqrt(
-    Math.pow(patientLoc.lat - driverLoc.lat, 2) + 
-    Math.pow(patientLoc.lng - driverLoc.lng, 2)
-  ) * 100;
-  const hours = distance / 60;
-  return Math.max(5, Math.round(hours * 60));
-}
-
-// Location Services
-async function getCurrentLocation() {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      position => resolve({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        timestamp: new Date().toISOString()
-      }),
-      error => reject(error),
-      { enableHighAccuracy: true, timeout: 5000 }
-    );
-  });
-}
+// ======================
+// 3. Location Services
+// ======================
 
 function startLocationTracking(uid) {
   if (!navigator.geolocation) {
@@ -228,38 +178,9 @@ function startLocationTracking(uid) {
   );
 }
 
-async function updatePatientLocation(uid, location) {
-  const updates = {
-    location: location,
-    lastLocationUpdate: serverTimestamp()
-  };
-  
-  if (patientData.status === "in_transit") {
-    updates.currentLocation = location;
-    await updateDoc(doc(db, "Rides", patientData.currentRideId), {
-      currentLocation: location,
-      updatedAt: serverTimestamp()
-    });
-  }
-  
-  await updateDoc(doc(db, "Patients", uid), updates);
-}
-
-// Real-time Updates
-function setupRealTimeUpdates(uid) {
-  const patientRef = doc(db, "Patients", uid);
-  
-  onSnapshot(patientRef, (doc) => {
-    if (!doc.exists()) return;
-    
-    patientData = doc.data();
-    updateUI();
-    
-    if (patientData.status === "driver_assigned" && patientData.assignedDriverETA && !etaTimer) {
-      startETACountdown(patientData.assignedDriverETA);
-    }
-  });
-}
+// ======================
+// 4. UI Updates
+// ======================
 
 function updateUI() {
   // Update profile form
@@ -276,17 +197,6 @@ function updateUI() {
     driverNameEl.textContent = patientData.assignedDriverName;
     document.getElementById('emergency-form').classList.remove('disabled');
   }
-}
-
-function formatStatus(status) {
-  const statusMap = {
-    "inactive": "No active ride",
-    "awaiting_driver": "Waiting for driver",
-    "driver_assigned": "Driver on the way",
-    "in_transit": "En route to hospital",
-    "arrived": "Arrived at hospital"
-  };
-  return statusMap[status] || status;
 }
 
 function startETACountdown(etaMinutes) {
@@ -306,13 +216,10 @@ function startETACountdown(etaMinutes) {
   }, 60000);
 }
 
-function updateETADisplay(minutes) {
-  etaDisplay.textContent = minutes > 0 ? 
-    `${minutes} min${minutes !== 1 ? 's' : ''}` : 
-    "Arriving soon";
-}
+// ======================
+// 5. Event Handlers
+// ======================
 
-// Form Handlers
 async function handleProfileSubmit(e) {
   e.preventDefault();
   try {
@@ -362,7 +269,57 @@ async function handleEmergencyFormSubmit(e) {
   }
 }
 
-// Notification System
+// ======================
+// 6. Logout Handling
+// ======================
+
+async function handleLogout() {
+  try {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    if (etaTimer) clearInterval(etaTimer);
+    await signOut(auth);
+    window.location.href = "../index.html";
+  } catch (error) {
+    handleError(error, "Logout failed");
+  }
+}
+
+// ======================
+// 7. Initialization
+// ======================
+
+function init() {
+  // Set up event listeners
+  if (profileForm) profileForm.addEventListener('submit', handleProfileSubmit);
+  if (emergencyBtn) emergencyBtn.addEventListener('click', handleEmergencyRequest);
+  if (emergencyForm) emergencyForm.addEventListener('submit', handleEmergencyFormSubmit);
+  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+  
+  // Initialize auth state listener
+  onAuthStateChanged(auth, handleAuthStateChange);
+}
+
+// Start the application
+document.addEventListener('DOMContentLoaded', init);
+
+// Helper Functions
+function formatStatus(status) {
+  const statusMap = {
+    "inactive": "No active ride",
+    "awaiting_driver": "Waiting for driver",
+    "driver_assigned": "Driver on the way",
+    "in_transit": "En route to hospital",
+    "arrived": "Arrived at hospital"
+  };
+  return statusMap[status] || status;
+}
+
+function updateETADisplay(minutes) {
+  etaDisplay.textContent = minutes > 0 ? 
+    `${minutes} min${minutes !== 1 ? 's' : ''}` : 
+    "Arriving soon";
+}
+
 function showNotification(message, type = "info") {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
@@ -382,25 +339,99 @@ function handleError(error, context) {
   showNotification(`${context}: ${message}`, "error");
 }
 
-// Event Listeners
-profileForm.addEventListener('submit', handleProfileSubmit);
-emergencyBtn.addEventListener('click', handleEmergencyRequest);
-emergencyForm.addEventListener('submit', handleEmergencyFormSubmit);
-logoutBtn.addEventListener('click', async () => {
-  try {
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-    if (etaTimer) clearInterval(etaTimer);
-    await signOut(auth);
-  } catch (error) {
-    handleError(error, "Logout failed");
-  }
-});
-
-// Initialize
-function init() {
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-  }
+async function getAvailableDrivers() {
+  const q = query(
+    collection(db, "Drivers"),
+    where("availability", "==", true),
+    where("status", "==", "active")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
-document.addEventListener('DOMContentLoaded', init);
+async function calculateETA(patientLoc, driverLoc) {
+  const distance = Math.sqrt(
+    Math.pow(patientLoc.lat - driverLoc.lat, 2) + 
+    Math.pow(patientLoc.lng - driverLoc.lng, 2)
+  ) * 100;
+  const hours = distance / 60;
+  return Math.max(5, Math.round(hours * 60));
+}
+
+async function updatePatientLocation(uid, location) {
+  const updates = {
+    location: location,
+    lastLocationUpdate: serverTimestamp()
+  };
+  
+  if (patientData.status === "in_transit") {
+    updates.currentLocation = location;
+    await updateDoc(doc(db, "Rides", patientData.currentRideId), {
+      currentLocation: location,
+      updatedAt: serverTimestamp()
+    });
+  }
+  
+  await updateDoc(doc(db, "Patients", uid), updates);
+}
+
+function setupRealTimeUpdates(uid) {
+  const patientRef = doc(db, "Patients", uid);
+  
+  onSnapshot(patientRef, (doc) => {
+    if (!doc.exists()) return;
+    
+    patientData = doc.data();
+    updateUI();
+    
+    if (patientData.status === "driver_assigned" && patientData.assignedDriverETA && !etaTimer) {
+      startETACountdown(patientData.assignedDriverETA);
+    }
+  });
+}
+
+async function initializePatient(uid) {
+  const user = auth.currentUser;
+  await setDoc(doc(db, "Patients", uid), {
+    uid: uid,
+    username: user.displayName || '',
+    email: user.email || '',
+    createdAt: serverTimestamp(),
+    status: "inactive",
+    profileComplete: false,
+    location: null
+  });
+}
+
+async function saveInitialProfile(uid) {
+  await updateDoc(doc(db, "Patients", uid), {
+    username: auth.currentUser.displayName || 'New Patient',
+    email: auth.currentUser.email || '',
+    profileComplete: true,
+    lastUpdated: serverTimestamp()
+  });
+}
+
+async function getCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      position => resolve({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        timestamp: new Date().toISOString()
+      }),
+      error => reject(error),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+}
+
+async function calculateDriverETAs(drivers, patientLocation) {
+  return await Promise.all(drivers.map(async driver => {
+    const eta = await calculateETA(patientLocation, driver.location);
+    return { ...driver, eta };
+  }));
+}
