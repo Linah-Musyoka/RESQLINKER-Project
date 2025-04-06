@@ -37,45 +37,14 @@
             <button type="submit" class="btn">Login</button>
             <p>Don't have an account? <span id="toggle-link-login" class="toggle-link">Sign Up</span></p>
         </form>
-
-        <!-- Error Message Modal -->
-        <div id="error-message">
-            <button class="close-btn" onclick="closeError()">×</button>
-            <p id="error-text">This is an error message!</p>
-        </div>
     </div>
 
     <footer>
         <p>&copy; 2025 RESQLINKER Service</p>
     </footer>
+        <!-- Your login logic -->
+        <script type="module" src="../js/login.js"></script>
 
-    <!-- Firebase SDK (v9+ Modular) -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js';
-        import { getAuth } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js';
-        import { getFirestore } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js';
-        import { getDatabase } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js';
-
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBUX5vcK2c3XzFvIGc2aTf4j5ECYtNT1Mk",
-            authDomain: "resq-linker-project.firebaseapp.com",
-            databaseURL: "https://resq-linker-project-default-rtdb.firebaseio.com",
-            projectId: "resq-linker-project",
-            storageBucket: "resq-linker-project.firebasestorage.app",
-            messagingSenderId: "561153672211",
-            appId: "1:561153672211:web:4415adc6c4cba3997cabe6"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const rtdb = getDatabase(app);
-    </script>
-
-    <!-- Your custom JavaScript -->
-    <script type="module" src="../js/login.js"></script>
 </body>
 
 </html>

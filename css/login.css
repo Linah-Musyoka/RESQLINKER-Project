@@ -134,26 +134,6 @@ input {
 .btn:hover {
     background-color: #0056b3;
 }
-
-/* Error Message Styling */
-#error-message {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(255, 0, 0, 0.9);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    width: 80%;
-    max-width: 400px;
-    text-align: center;
-    font-size: 1rem;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.3s ease-in-out;
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -163,20 +143,23 @@ input {
         opacity: 1;
     }
 }
-
-#error-message .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: transparent;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
+/* Style for the select dropdown */
+#role-select {
+    width: 100%;
+    padding: 12px;
+    margin: 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    font-size: 16px;
+    color: #333;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
 }
 
-#error-message .close-btn:hover {
-    color: blue;
+#role-select:focus {
+    border-color: #007BFF;
+    outline: none;
 }
 
 /* Toggle Link Styling */
@@ -188,4 +171,19 @@ input {
 
 .toggle-link:hover {
     color: blue;
+}
+.signout-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.signout-btn:hover {
+    background-color: #c82333;
 }
