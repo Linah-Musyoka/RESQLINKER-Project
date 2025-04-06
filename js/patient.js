@@ -1,27 +1,20 @@
-// Import Firebase modules
+// patient.js - Optimized and Enhanced
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
 import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  setDoc,
-  updateDoc,
-  collection,
-  addDoc
+  getFirestore, doc, getDoc, updateDoc, setDoc,
+  collection, query, where, getDocs, onSnapshot,
+  writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { 
-  getAuth, 
-  onAuthStateChanged,
-  signOut 
+  getAuth, onAuthStateChanged, signOut 
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 
-// Firebase configuration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBUX5vcK2c3XzFvIGc2aTf4j5ECYtNT1Mk",
   authDomain: "resq-linker-project.firebaseapp.com",
-  databaseURL: "https://resq-linker-project-default-rtdb.firebaseio.com",
   projectId: "resq-linker-project",
-  storageBucket: "resq-linker-project.firebasestorage.app",
+  storageBucket: "resq-linker-project.appspot.com",
   messagingSenderId: "561153672211",
   appId: "1:561153672211:web:4415adc6c4cba3997cabe6"
 };
@@ -32,207 +25,382 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // DOM Elements
-const logoutBtn = document.getElementById('logout-btn');
 const profileForm = document.querySelector('.profile form');
 const emergencyBtn = document.querySelector('.emergency-section .btn');
-const bookRideBtn = document.querySelector('.book-ride .btn');
 const emergencyForm = document.querySelector('.emergency-form form');
-const currentLocationDisplay = document.getElementById('current-location');
-const rideStatusDisplay = document.querySelector('.ride-status p');
+const logoutBtn = document.getElementById('logout-btn');
+const currentLocationEl = document.getElementById('current-location');
+const notificationPanel = document.getElementById('notification-panel');
+const rideStatusIndicator = document.getElementById('ride-status-indicator');
+const etaDisplay = document.getElementById('eta-display');
+const driverNameEl = document.getElementById('driver-name');
 
-// Check authentication state
-onAuthStateChanged(auth, async (user) => {
+// Global Variables
+let currentUser = null;
+let patientData = {};
+let watchId = null;
+let etaTimer = null;
+
+// Error Messages
+const errorMessages = {
+  auth: "Authentication error. Please login again.",
+  firestore: "Database error. Please try again.",
+  location: "Location services required for this feature.",
+  network: "Network connection issue detected.",
+  permission: "You don't have permission for this action."
+};
+
+// Auth State Listener
+onAuthStateChanged(auth, handleAuthStateChange);
+
+async function handleAuthStateChange(user) {
   if (!user) {
-    window.location.href = "../index.html";
+    window.location.href = '../index.html';
     return;
   }
-
-  // Check if user is a patient
-  const patientDoc = await getDoc(doc(db, "Patients", user.uid));
-  if (!patientDoc.exists()) {
-    alert("You don't have patient access");
-    await signOut(auth);
-    window.location.href = "../index.html";
-    return;
-  }
-
-  // Load patient data
-  loadPatientData(user.uid);
-});
-
-// Load patient data from Firestore
-async function loadPatientData(patientId) {
+  
   try {
-    const docRef = doc(db, "Patients", patientId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const patientData = docSnap.data();
-      
-      // Populate profile form
-      if (profileForm) {
-        profileForm.elements['name'].value = patientData.fullName || '';
-        profileForm.elements['email'].value = patientData.email || '';
-      }
-
-      // Display current ride status if available
-      if (rideStatusDisplay && patientData.currentRide) {
-        rideStatusDisplay.textContent = `Current Ride: ${patientData.currentRide.status || 'Not Started'}`;
-      }
-    }
+    currentUser = user;
+    await loadPatientData(user.uid);
+    setupRealTimeUpdates(user.uid);
+    startLocationTracking(user.uid);
   } catch (error) {
-    console.error("Error loading patient data:", error);
-    alert("Error loading your data. Please try again.");
+    handleError(error, "Initialization failed");
+    await signOut(auth);
   }
 }
 
-// Update profile
-if (profileForm) {
-  profileForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const name = profileForm.elements['name'].value;
-    const email = profileForm.elements['email'].value;
-    const user = auth.currentUser;
+// Patient Data Management
+async function loadPatientData(uid) {
+  const docRef = doc(db, "Patients", uid);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    patientData = docSnap.data();
+    updateUI();
+    if (!patientData.profileComplete) await saveInitialProfile(uid);
+  } else {
+    await initializePatient(uid);
+  }
+}
 
-    try {
-      await updateDoc(doc(db, "Patients", user.uid), {
-        fullName: name,
-        email: email,
-        lastUpdated: new Date().toISOString()
-      });
-      alert("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Error updating profile. Please try again.");
-    }
+async function initializePatient(uid) {
+  const user = auth.currentUser;
+  await setDoc(doc(db, "Patients", uid), {
+    uid: uid,
+    username: user.displayName || '',
+    email: user.email || '',
+    createdAt: serverTimestamp(),
+    status: "inactive",
+    profileComplete: false,
+    location: null
   });
 }
 
-// Emergency ride request
-if (emergencyBtn) {
-  emergencyBtn.addEventListener('click', async () => {
-    if (!confirm("Are you sure you need an emergency ride?")) return;
+async function saveInitialProfile(uid) {
+  await updateDoc(doc(db, "Patients", uid), {
+    username: auth.currentUser.displayName || 'New Patient',
+    email: auth.currentUser.email || '',
+    profileComplete: true,
+    lastUpdated: serverTimestamp()
+  });
+}
+
+// Emergency System
+async function handleEmergencyRequest() {
+  const confirmEmergency = confirm("This will notify available drivers. Continue?");
+  if (!confirmEmergency) return;
+
+  try {
+    const location = await getCurrentLocation();
+    await updateDoc(doc(db, "Patients", currentUser.uid), {
+      status: "awaiting_driver",
+      emergencyRequestTime: serverTimestamp(),
+      location: location
+    });
     
-    try {
-      const user = auth.currentUser;
-      const patientDoc = await getDoc(doc(db, "Patients", user.uid));
-      
-      if (!patientDoc.exists()) {
-        alert("Patient record not found");
-        return;
-      }
+    await assignNearestDriver(location);
+    showNotification("Emergency request sent! Finding nearest driver...", "success");
+  } catch (error) {
+    handleError(error, "Emergency request failed");
+  }
+}
 
-      // Get current location
-      let location = "Unknown";
-      try {
-        const pos = await getCurrentPosition();
-        location = `Lat: ${pos.coords.latitude}, Long: ${pos.coords.longitude}`;
-        if (currentLocationDisplay) {
-          currentLocationDisplay.textContent = location;
-        }
-      } catch (geoError) {
-        console.warn("Geolocation error:", geoError);
-        location = "Approximate location (permissions denied)";
-      }
+async function assignNearestDriver(patientLocation) {
+  const drivers = await getAvailableDrivers();
+  if (drivers.length === 0) throw new Error("No available drivers");
+  
+  const driversWithETAs = await calculateDriverETAs(drivers, patientLocation);
+  const nearestDriver = driversWithETAs.sort((a, b) => a.eta - b.eta)[0];
+  
+  const batch = writeBatch(db);
+  const rideRef = doc(collection(db, "Rides"));
+  
+  // Update driver
+  batch.update(doc(db, "Drivers", nearestDriver.id), {
+    availability: false,
+    currentPatient: currentUser.uid,
+    lastAssignmentTime: serverTimestamp()
+  });
+  
+  // Update patient
+  batch.update(doc(db, "Patients", currentUser.uid), {
+    assignedDriver: nearestDriver.id,
+    assignedDriverName: nearestDriver.username,
+    assignedDriverETA: nearestDriver.eta,
+    status: "driver_assigned",
+    currentRideId: rideRef.id
+  });
+  
+  // Create ride record
+  batch.set(rideRef, {
+    patientId: currentUser.uid,
+    driverId: nearestDriver.id,
+    startTime: serverTimestamp(),
+    status: "active",
+    initialETA: nearestDriver.eta,
+    startLocation: patientLocation
+  });
+  
+  await batch.commit();
+  startETACountdown(nearestDriver.eta);
+}
 
-      // Create emergency ride request
-      const rideRequest = {
-        patientId: user.uid,
-        patientName: patientDoc.data().fullName || "Unknown",
-        location: location,
-        status: "requested",
-        timestamp: new Date().toISOString(),
-        isEmergency: true
+async function calculateDriverETAs(drivers, patientLocation) {
+  return await Promise.all(drivers.map(async driver => {
+    const eta = await calculateETA(patientLocation, driver.location);
+    return { ...driver, eta };
+  }));
+}
+
+async function calculateETA(patientLoc, driverLoc) {
+  // Simple distance calculation (mock)
+  const distance = Math.sqrt(
+    Math.pow(patientLoc.lat - driverLoc.lat, 2) + 
+    Math.pow(patientLoc.lng - driverLoc.lng, 2)
+  ) * 100;
+  const hours = distance / 60;
+  return Math.max(5, Math.round(hours * 60));
+}
+
+// Location Services
+async function getCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      position => resolve({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        timestamp: new Date().toISOString()
+      }),
+      error => reject(error),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+}
+
+function startLocationTracking(uid) {
+  if (!navigator.geolocation) {
+    currentLocationEl.textContent = "Geolocation not supported";
+    return;
+  }
+
+  watchId = navigator.geolocation.watchPosition(
+    async (position) => {
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        timestamp: new Date().toISOString()
       };
-
-      // Add to rides collection
-      const rideRef = await addDoc(collection(db, "Rides"), rideRequest);
       
-      // Update patient document with current ride
-      await updateDoc(doc(db, "Patients", user.uid), {
-        currentRide: {
-          id: rideRef.id,
-          status: "requested"
-        }
-      });
-
-      alert("Emergency ride requested! A driver will be assigned soon.");
-      if (rideStatusDisplay) {
-        rideStatusDisplay.textContent = "Current Ride: Requested (Emergency)";
+      currentLocationEl.textContent = `Lat: ${location.lat.toFixed(4)}, Lng: ${location.lng.toFixed(4)}`;
+      
+      try {
+        await updatePatientLocation(uid, location);
+      } catch (error) {
+        console.error("Location update failed:", error);
       }
-    } catch (error) {
-      console.error("Error requesting emergency ride:", error);
-      alert("Error requesting emergency ride. Please try again.");
+    },
+    (error) => {
+      currentLocationEl.textContent = "Location unavailable";
+      console.error("Geolocation error:", error);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0, distanceFilter: 50 }
+  );
+}
+
+async function updatePatientLocation(uid, location) {
+  const updates = {
+    location: location,
+    lastLocationUpdate: serverTimestamp()
+  };
+  
+  if (patientData.status === "in_transit") {
+    updates.currentLocation = location;
+    await updateDoc(doc(db, "Rides", patientData.currentRideId), {
+      currentLocation: location,
+      updatedAt: serverTimestamp()
+    });
+  }
+  
+  await updateDoc(doc(db, "Patients", uid), updates);
+}
+
+// Real-time Updates
+function setupRealTimeUpdates(uid) {
+  const patientRef = doc(db, "Patients", uid);
+  
+  onSnapshot(patientRef, (doc) => {
+    if (!doc.exists()) return;
+    
+    patientData = doc.data();
+    updateUI();
+    
+    if (patientData.status === "driver_assigned" && patientData.assignedDriverETA && !etaTimer) {
+      startETACountdown(patientData.assignedDriverETA);
     }
   });
 }
 
-// Book regular ride
-if (bookRideBtn) {
-  bookRideBtn.addEventListener('click', async () => {
-    // Implement similar logic to emergency ride but with isEmergency: false
-    alert("Regular ride booking functionality will be implemented here");
-  });
+function updateUI() {
+  // Update profile form
+  if (patientData.username) document.getElementById('name').value = patientData.username;
+  if (patientData.email) document.getElementById('email').value = patientData.email;
+  if (patientData.allergies) document.getElementById('allergies').value = patientData.allergies;
+  
+  // Update ride status
+  document.querySelector('.ride-status p').textContent = `Status: ${formatStatus(patientData.status)}`;
+  rideStatusIndicator.className = `status-${patientData.status.replace('_', '-')}`;
+  
+  // Update driver info
+  if (patientData.assignedDriverName) {
+    driverNameEl.textContent = patientData.assignedDriverName;
+    document.getElementById('emergency-form').classList.remove('disabled');
+  }
 }
 
-// Submit emergency form
-if (emergencyForm) {
-  emergencyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+function formatStatus(status) {
+  const statusMap = {
+    "inactive": "No active ride",
+    "awaiting_driver": "Waiting for driver",
+    "driver_assigned": "Driver on the way",
+    "in_transit": "En route to hospital",
+    "arrived": "Arrived at hospital"
+  };
+  return statusMap[status] || status;
+}
+
+function startETACountdown(etaMinutes) {
+  if (etaTimer) clearInterval(etaTimer);
+  
+  let minutesLeft = etaMinutes;
+  updateETADisplay(minutesLeft);
+  
+  etaTimer = setInterval(() => {
+    minutesLeft--;
+    updateETADisplay(minutesLeft);
     
+    if (minutesLeft <= 0) {
+      clearInterval(etaTimer);
+      etaTimer = null;
+    }
+  }, 60000);
+}
+
+function updateETADisplay(minutes) {
+  etaDisplay.textContent = minutes > 0 ? 
+    `${minutes} min${minutes !== 1 ? 's' : ''}` : 
+    "Arriving soon";
+}
+
+// Form Handlers
+async function handleProfileSubmit(e) {
+  e.preventDefault();
+  try {
+    await updateDoc(doc(db, "Patients", currentUser.uid), {
+      username: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      profileComplete: true,
+      lastUpdated: serverTimestamp()
+    });
+    showNotification("Profile updated successfully!", "success");
+  } catch (error) {
+    handleError(error, "Profile update failed");
+  }
+}
+
+async function handleEmergencyFormSubmit(e) {
+  e.preventDefault();
+  try {
+    if (patientData.status !== "driver_assigned") {
+      throw new Error("Please wait for driver assignment");
+    }
+
+    const batch = writeBatch(db);
     const formData = {
-      name: emergencyForm.elements['patient-name'].value,
-      allergies: emergencyForm.elements['allergies'].value,
-      details: emergencyForm.elements['emergency-details'].value,
-      timestamp: new Date().toISOString(),
-      patientId: auth.currentUser.uid
+      patientId: currentUser.uid,
+      patientName: patientData.username,
+      allergies: document.getElementById('allergies').value,
+      emergencyDetails: document.getElementById('emergency-details').value,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      assignedDriver: patientData.assignedDriver,
+      driverName: patientData.assignedDriverName
     };
 
-    try {
-      await addDoc(collection(db, "EmergencyForms"), formData);
-      alert("Emergency form submitted successfully!");
-      emergencyForm.reset();
-    } catch (error) {
-      console.error("Error submitting emergency form:", error);
-      alert("Error submitting form. Please try again.");
-    }
-  });
-}
-
-// Logout functionality
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    try {
-      await signOut(auth);
-      window.location.href = "../index.html";
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  });
-}
-
-// Geolocation helper
-function getCurrentPosition() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation not supported"));
-    } else {
-      navigator.geolocation.getCurrentPosition(resolve, reject);
-    }
-  });
-}
-
-// Attempt to get location on page load
-if (currentLocationDisplay) {
-  getCurrentPosition()
-    .then(pos => {
-      currentLocationDisplay.textContent = 
-        `Lat: ${pos.coords.latitude.toFixed(4)}, Long: ${pos.coords.longitude.toFixed(4)}`;
-    })
-    .catch(err => {
-      console.warn("Geolocation error:", err);
-      currentLocationDisplay.textContent = "Location unavailable (check permissions)";
+    batch.update(doc(db, "Patients", currentUser.uid), {
+      medicalInfoSubmitted: true,
+      lastUpdated: serverTimestamp()
     });
+
+    const emergencyRef = doc(collection(db, "HospitalEmergencyForms"));
+    batch.set(emergencyRef, formData);
+    await batch.commit();
+
+    showNotification("Emergency details sent to hospital!", "success");
+  } catch (error) {
+    handleError(error, "Form submission failed");
+  }
 }
+
+// Notification System
+function showNotification(message, type = "info") {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notificationPanel.appendChild(notification);
+  
+  setTimeout(() => notification.remove(), 5000);
+}
+
+function handleError(error, context) {
+  console.error(`${context}:`, error);
+  
+  let message = errorMessages.network;
+  if (error.code === 'permission-denied') message = errorMessages.permission;
+  if (error.code === 'unavailable') message = errorMessages.firestore;
+  
+  showNotification(`${context}: ${message}`, "error");
+}
+
+// Event Listeners
+profileForm.addEventListener('submit', handleProfileSubmit);
+emergencyBtn.addEventListener('click', handleEmergencyRequest);
+emergencyForm.addEventListener('submit', handleEmergencyFormSubmit);
+logoutBtn.addEventListener('click', async () => {
+  try {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    if (etaTimer) clearInterval(etaTimer);
+    await signOut(auth);
+  } catch (error) {
+    handleError(error, "Logout failed");
+  }
+});
+
+// Initialize
+function init() {
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);

@@ -45,6 +45,12 @@
         <section class="ride-status">
             <h2>Ride Status</h2>
             <p>Current Ride: Not Started</p>
+            <div id="ride-status-indicator" class="status-inactive"></div>
+            <div id="driver-info">
+                <h3>Your Driver</h3>
+                <p id="driver-name">Not assigned</p>
+                <p>ETA: <span id="eta-display">-</span></p>
+            </div>
         </section>
 
         <!-- Book Ride Section -->
@@ -68,6 +74,9 @@
                     required></textarea>
 
                 <button type="submit" class="btn">Submit Emergency Form</button>
+                <div class="form-note" id="medical-form-note">
+                    Complete this after driver assignment
+                </div>
             </form>
         </section>
 
