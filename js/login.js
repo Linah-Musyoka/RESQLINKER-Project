@@ -39,7 +39,7 @@ onAuthStateChanged(auth, async (user) => {
         if (collectionName === "Drivers") {
             window.location.href = "driver-dashboard.html";
         } else if (collectionName === "Patients") {
-            window.location.href = "patient-dashboard.html";
+            window.location.href = "patient.html";
         }
     } else {
         console.log("No user is logged in");

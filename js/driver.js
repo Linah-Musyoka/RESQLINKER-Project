@@ -1,64 +1,282 @@
-// Function to handle form submission (profile, vehicle, active ride)
-document.getElementById('profile-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const name = document.getElementById('driver-name').value;
-    const contact = document.getElementById('driver-contact').value;
-    const email = document.getElementById('driver-email').value;
-    
-    // Save the profile data to Firebase (this part will be added once Firebase is integrated)
-    console.log('Profile Saved:', { name, contact, email });
-});
+// driver.js - Complete Implementation
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+import { 
+  getFirestore, doc, getDoc, updateDoc, onSnapshot,
+  collection, query, where, getDocs, writeBatch, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { 
+  getAuth, onAuthStateChanged, signOut 
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 
-document.getElementById('vehicle-info-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const make = document.getElementById('vehicle-make').value;
-    const model = document.getElementById('vehicle-model').value;
-    const registration = document.getElementById('vehicle-reg').value;
+// Firebase Configuration (same as patient.js)
+const firebaseConfig = {
+  apiKey: "AIzaSyBUX5vcK2c3XzFvIGc2aTf4j5ECYtNT1Mk",
+  authDomain: "resq-linker-project.firebaseapp.com",
+  projectId: "resq-linker-project",
+  storageBucket: "resq-linker-project.appspot.com",
+  messagingSenderId: "561153672211",
+  appId: "1:561153672211:web:4415adc6c4cba3997cabe6"
+};
 
-    // Save the vehicle info to Firebase (this part will be added once Firebase is integrated)
-    console.log('Vehicle Info Saved:', { make, model, registration });
-});
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-document.getElementById('active-ride-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const pickupLocation = document.getElementById('pickup-location').value;
-    const passengerName = document.getElementById('passenger-name').value;
+// DOM Elements
+const profileForm = document.getElementById('profile-form');
+const vehicleForm = document.getElementById('vehicle-info-form');
+const availabilityBtn = document.getElementById('availability-btn');
+const startTripBtn = document.getElementById('start-trip-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const routeDisplay = document.getElementById('route');
+const etaDisplay = document.getElementById('eta');
+const locationDisplay = document.getElementById('location');
 
-    // Update active ride details (this part will be added once Firebase is integrated)
-    console.log('Active Ride Updated:', { pickupLocation, passengerName });
-});
+// Global Variables
+let currentDriver = null;
+let currentRide = null;
+let watchId = null;
+let isAvailable = false;
 
-// Real-Time Location Updates for Ongoing Trip
-let ongoingTripStarted = false;
-
-document.getElementById('start-trip-btn').addEventListener('click', function() {
-    if (!ongoingTripStarted) {
-        ongoingTripStarted = true;
-        startRealTimeLocationUpdates();
-    }
-});
-
-// Function to start real-time location updates using the Geolocation API
-function startRealTimeLocationUpdates() {
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(function(position) {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-
-            // Display the current location in the ongoing trip section
-            document.getElementById('location').textContent = `Lat: ${latitude}, Lon: ${longitude}`;
-
-            // Update the trip route and ETA (Placeholder, real-time calculations can be added)
-            document.getElementById('route').textContent = `Route: From Pickup to Destination`;
-            document.getElementById('eta').textContent = `ETA: 10 minutes`;
-
-            // Simulate real-time updates to Firebase (to be integrated later)
-            console.log('Real-Time Location:', { latitude, longitude });
-        }, function(error) {
-            console.log('Geolocation error:', error);
-            document.getElementById('location').textContent = 'Location not available';
-        });
-    } else {
-        alert("Geolocation is not supported by this browser.");
-    }
+// Initialize the application
+function init() {
+  // Set up event listeners
+  profileForm.addEventListener('submit', handleProfileSubmit);
+  vehicleForm.addEventListener('submit', handleVehicleSubmit);
+  availabilityBtn.addEventListener('click', toggleAvailability);
+  startTripBtn.addEventListener('click', startTrip);
+  logoutBtn.addEventListener('click', handleLogout);
+  
+  // Check auth state
+  onAuthStateChanged(auth, handleAuthStateChange);
 }
+
+// Handle authentication state
+async function handleAuthStateChange(user) {
+  if (!user) {
+    window.location.href = '../index.html';
+    return;
+  }
+  
+  currentDriver = user;
+  await loadDriverData(user.uid);
+  setupRealTimeUpdates(user.uid);
+  startLocationTracking(user.uid);
+}
+
+// Load driver data
+async function loadDriverData(driverId) {
+  const docRef = doc(db, "Drivers", driverId);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    updateDriverUI(data);
+    isAvailable = data.availability || false;
+    updateAvailabilityButton();
+    
+    if (data.currentRide) {
+      loadCurrentRide(data.currentRide);
+    }
+  } else {
+    // Initialize new driver document
+    await setDoc(docRef, {
+      uid: driverId,
+      name: '',
+      email: '',
+      contact: '',
+      vehicleMake: '',
+      vehicleModel: '',
+      registration: '',
+      availability: false,
+      status: 'offline',
+      createdAt: serverTimestamp()
+    });
+  }
+}
+
+// Update UI with driver data
+function updateDriverUI(data) {
+  document.getElementById('driver-name').value = data.name || '';
+  document.getElementById('driver-contact').value = data.contact || '';
+  document.getElementById('driver-email').value = data.email || '';
+  document.getElementById('vehicle-make').value = data.vehicleMake || '';
+  document.getElementById('vehicle-model').value = data.vehicleModel || '';
+  document.getElementById('vehicle-reg').value = data.registration || '';
+  
+  isAvailable = data.availability || false;
+  updateAvailabilityButton();
+}
+
+// Update availability button state
+function updateAvailabilityButton() {
+  availabilityBtn.textContent = isAvailable ? 'Available' : 'Unavailable';
+  availabilityBtn.className = isAvailable ? 'btn available' : 'btn unavailable';
+}
+
+// Handle profile form submission
+async function handleProfileSubmit(e) {
+  e.preventDefault();
+  try {
+    await updateDoc(doc(db, "Drivers", currentDriver.uid), {
+      name: document.getElementById('driver-name').value,
+      contact: document.getElementById('driver-contact').value,
+      email: document.getElementById('driver-email').value,
+      lastUpdated: serverTimestamp()
+    });
+    showNotification("Profile updated successfully!");
+  } catch (error) {
+    showError("Failed to update profile: " + error.message);
+  }
+}
+
+// Handle vehicle form submission
+async function handleVehicleSubmit(e) {
+  e.preventDefault();
+  try {
+    await updateDoc(doc(db, "Drivers", currentDriver.uid), {
+      vehicleMake: document.getElementById('vehicle-make').value,
+      vehicleModel: document.getElementById('vehicle-model').value,
+      registration: document.getElementById('vehicle-reg').value,
+      lastUpdated: serverTimestamp()
+    });
+    showNotification("Vehicle information updated!");
+  } catch (error) {
+    showError("Failed to update vehicle info: " + error.message);
+  }
+}
+
+// Toggle driver availability
+async function toggleAvailability() {
+  try {
+    isAvailable = !isAvailable;
+    await updateDoc(doc(db, "Drivers", currentDriver.uid), {
+      availability: isAvailable,
+      status: isAvailable ? 'available' : 'unavailable',
+      lastUpdated: serverTimestamp()
+    });
+    updateAvailabilityButton();
+    showNotification(`You are now ${isAvailable ? 'available' : 'unavailable'}`);
+  } catch (error) {
+    showError("Failed to update availability: " + error.message);
+  }
+}
+
+// Load current ride information
+async function loadCurrentRide(rideId) {
+  const rideDoc = await getDoc(doc(db, "Rides", rideId));
+  if (rideDoc.exists()) {
+    currentRide = rideDoc.data();
+    updateRideUI(currentRide);
+  }
+}
+
+// Update ride information in UI
+function updateRideUI(ride) {
+  document.getElementById('pickup-location').value = ride.pickupLocation || '';
+  document.getElementById('passenger-name').value = ride.patientName || '';
+  routeDisplay.textContent = `${ride.pickupLocation} to ${ride.hospitalName}`;
+  etaDisplay.textContent = ride.eta ? `${ride.eta} minutes` : 'Calculating...';
+  
+  // Enable trip controls
+  startTripBtn.disabled = false;
+}
+
+// Start trip
+async function startTrip() {
+  try {
+    await updateDoc(doc(db, "Rides", currentRide.id), {
+      status: 'in_progress',
+      startTime: serverTimestamp()
+    });
+    showNotification("Trip started successfully!");
+  } catch (error) {
+    showError("Failed to start trip: " + error.message);
+  }
+}
+
+// Location tracking
+function startLocationTracking(driverId) {
+  if (!navigator.geolocation) {
+    locationDisplay.textContent = "Geolocation not supported";
+    return;
+  }
+
+  watchId = navigator.geolocation.watchPosition(
+    async (position) => {
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        timestamp: new Date().toISOString()
+      };
+      
+      locationDisplay.textContent = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+      
+      try {
+        await updateDoc(doc(db, "Drivers", driverId), {
+          location: location,
+          lastLocationUpdate: serverTimestamp()
+        });
+        
+        if (currentRide) {
+          await updateDoc(doc(db, "Rides", currentRide.id), {
+            driverLocation: location,
+            updatedAt: serverTimestamp()
+          });
+        }
+      } catch (error) {
+        console.error("Location update failed:", error);
+      }
+    },
+    (error) => {
+      locationDisplay.textContent = "Location unavailable";
+      console.error("Geolocation error:", error);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0, distanceFilter: 50 }
+  );
+}
+
+// Setup real-time updates
+function setupRealTimeUpdates(driverId) {
+  // Listen for ride assignments
+  onSnapshot(doc(db, "Drivers", driverId), (doc) => {
+    if (doc.exists()) {
+      const data = doc.data();
+      if (data.currentRide && (!currentRide || currentRide.id !== data.currentRide)) {
+        loadCurrentRide(data.currentRide);
+      }
+    }
+  });
+}
+
+// Handle logout
+async function handleLogout() {
+  try {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    await signOut(auth);
+    window.location.href = "../index.html";
+  } catch (error) {
+    showError("Logout failed: " + error.message);
+  }
+}
+
+// Helper functions
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
+}
+
+function showError(message) {
+  const error = document.createElement('div');
+  error.className = 'notification error';
+  error.textContent = message;
+  document.body.appendChild(error);
+  setTimeout(() => error.remove(), 3000);
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', init);

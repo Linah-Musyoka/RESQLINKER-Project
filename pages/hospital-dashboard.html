@@ -11,47 +11,80 @@
 <body>
     <header>
         <h1>Hospital Dashboard</h1>
+        <nav>
+            <ul>
+                <li><a href="../pages/driver-dashboard.html" class="btn">Driver Dashboard</a></li>
+                <li><a href="../index.html" class="btn">Home</a></li>
+                <!-- Added logout link which would be useful -->
+                <li><a href="../index.html" class="btn logout">Logout</a></li>
+            </ul>
+        </nav>
     </header>
 
-    <nav>
-        <ul>
-            <li><a href="../pages/driver-dashboard.html" class="btn">Driver Dashboard</a></li>
-            <li><a href="../index.html" class="btn">Home</a></li>
-        </ul>
-    </nav>
-
     <main>
-        <div class="emergency-request">
-            <h2>Emergency Requests</h2>
-            <p id="emergency-info">No emergency request at the moment.</p>
-            <button class="btn" id="accept-btn">Accept</button>
-            <button class="btn" id="reject-btn">Reject</button>
-        </div>
+        <section class="dashboard-container">
+            <div class="emergency-request card">
+                <h2>Emergency Requests</h2>
+                <div id="emergency-details">
+                    <p id="emergency-info">No emergency request at the moment.</p>
+                    <div id="request-details" style="display: none;">
+                        <p><strong>Patient:</strong> <span id="patient-name"></span></p>
+                        <p><strong>Location:</strong> <span id="patient-location"></span></p>
+                        <p><strong>Condition:</strong> <span id="patient-condition"></span></p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn accept" id="accept-btn" disabled>Accept</button>
+                    <button class="btn reject" id="reject-btn" disabled>Reject</button>
+                </div>
+            </div>
 
-        <div class="update-status">
-            <h2>Update Emergency Status</h2>
-            <form id="status-form">
-                <label for="status">Emergency Status:</label>
-                <select id="status" name="status" required>
-                    <option value="On the way">On the way</option>
-                    <option value="At the hospital">At the hospital</option>
-                </select>
-                <button type="submit" class="btn">Update Status</button>
-            </form>
-        </div>
+            <div class="update-status card">
+                <h2>Update Emergency Status</h2>
+                <form id="status-form">
+                    <label for="status">Emergency Status:</label>
+                    <select id="status" name="status" required disabled>
+                        <option value="">Select status</option>
+                        <option value="On the way">On the way</option>
+                        <option value="At the hospital">At the hospital</option>
+                        <option value="In treatment">In treatment</option>
+                    </select>
+                    <button type="submit" class="btn" disabled>Update Status</button>
+                </form>
+            </div>
 
-        <div class="complete-emergency">
-            <h2>Complete Emergency Request</h2>
-            <button class="btn" id="complete-btn">Mark as Completed</button>
-        </div>
+            <div class="complete-emergency card">
+                <h2>Complete Emergency Request</h2>
+                <button class="btn complete" id="complete-btn" disabled>Mark as Completed</button>
+            </div>
+        </section>
+
+        <!-- Added emergency history section -->
+        <section class="emergency-history card">
+            <h2>Recent Emergency Cases</h2>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Case ID</th>
+                        <th>Patient</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4">No recent cases</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
     </main>
 
     <footer>
-        <p>&copy; 2025 RESQLINKER Service</p>
+        <p>&copy; 2025 RESQLINKER Service | <span id="current-time"></span></p>
     </footer>
 
-    <script src="../js/hospital.js"></script>
+    <script type="module" src="../js/hospital.js"></script>
 </body>
 
 </html>
-
