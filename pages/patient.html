@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,6 +6,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard</title>
     <link rel="stylesheet" href="../css/patient.css">
+    <style>
+        /* Notification panel styles */
+        #notification-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .notification {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: white;
+            animation: slideIn 0.5s forwards;
+        }
+
+        .notification.error {
+            background-color: #ff4444;
+        }
+
+        .notification.success {
+            background-color: #00C851;
+        }
+
+        .notification.info {
+            background-color: #33b5e5;
+        }
+
+        .notification.warning {
+            background-color: #ffbb33;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        /* Driver selection styles */
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .driver-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .driver-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Status indicators */
+        .status-inactive {
+            background-color: #cccccc;
+        }
+
+        .status-awaiting-driver {
+            background-color: #ffcc00;
+        }
+
+        .status-driver-assigned {
+            background-color: #33b5e5;
+        }
+
+        .status-in-transit {
+            background-color: #007bff;
+        }
+
+        .status-arrived {
+            background-color: #00C851;
+        }
+    </style>
 </head>
 
 <body>
@@ -23,6 +140,9 @@
     </nav>
 
     <main>
+        <!-- Notification Panel -->
+        <div id="notification-panel"></div>
+
         <!-- Profile Section -->
         <section class="profile">
             <h2>Profile</h2>
@@ -31,20 +151,23 @@
                 <input type="text" id="name" name="name" placeholder="Enter your full name" required>
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" placeholder="Enter your email" required>
-        
+                <label for="allergies">Allergies/Medical Notes:</label>
+                <textarea id="allergies" name="allergies"
+                    placeholder="List any allergies or medical conditions"></textarea>
                 <button type="submit" class="btn">Save Profile</button>
             </form>
         </section>
+
         <!-- Emergency Button Section -->
         <section class="emergency-section">
             <h2>Emergency</h2>
-            <button class="btn">Request Emergency Ride</button>
+            <button class="btn" id="emergency-btn">Request Emergency Ride</button>
         </section>
 
         <!-- Ride Status Section -->
         <section class="ride-status">
             <h2>Ride Status</h2>
-            <p>Current Ride: Not Started</p>
+            <p id="ride-status-text">Current Ride: Not Started</p>
             <div id="ride-status-indicator" class="status-inactive"></div>
             <div id="driver-info">
                 <h3>Your Driver</h3>
@@ -53,46 +176,49 @@
             </div>
         </section>
 
-        <!-- Book Ride Section -->
-        <section class="book-ride">
-            <h2>Book Ride</h2>
-            <button class="btn">Book a Ride</button>
+        <!-- Driver Selection Section (Hidden Initially) -->
+        <section id="driver-selection" style="display:none;">
+            <h2>Available Drivers</h2>
+            <div class="form-note">Please select a driver from the list below</div>
+            <div id="drivers-list" class="drivers-grid"></div>
         </section>
 
-        <!-- Emergency Form Section -->
-        <section class="emergency-form">
-            <h2>Emergency Form</h2>
+        <!-- Emergency Form (Hidden Initially) -->
+        <section id="emergency-form" style="display:none;">
+            <h2>Emergency Details</h2>
             <form>
-                <label for="patient-name">Full Name:</label>
-                <input type="text" id="patient-name" name="name" placeholder="Enter your full name" required>
+                <label for="condition">Medical Condition:</label>
+                <input type="text" id="condition" name="condition" required>
 
-                <label for="allergies">Allergies:</label>
-                <input type="text" id="allergies" name="allergies" placeholder="Enter your allergies" required>
+                <label for="symptoms">Symptoms:</label>
+                <textarea id="symptoms" name="symptoms" required></textarea>
 
-                <label for="emergency-details">Emergency Details:</label>
-                <textarea id="emergency-details" name="emergency-details" placeholder="Provide details of the emergency"
-                    required></textarea>
+                <label for="severity">Severity:</label>
+                <select id="severity" name="severity" required>
+                    <option value="mild">Mild</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="severe">Severe</option>
+                    <option value="critical">Critical</option>
+                </select>
 
-                <button type="submit" class="btn">Submit Emergency Form</button>
-                <div class="form-note" id="medical-form-note">
-                    Complete this after driver assignment
-                </div>
+                <button type="submit" class="btn">Submit to Hospital</button>
             </form>
         </section>
 
         <!-- Location Section -->
-        <div class="location-section">
+        <section class="location-section">
             <h2>Current Location</h2>
             <p id="current-location">Loading your location...</p>
-        </div>
-
+        </section>
     </main>
+
+    <!-- Driver Profile Modal -->
+    <div id="driver-profile-modal" class="modal"></div>
 
     <footer>
         <p>&copy; 2025 RESQLINKER Service</p>
     </footer>
     <script type="module" src="../js/patient.js"></script>
-
 </body>
 
 </html>

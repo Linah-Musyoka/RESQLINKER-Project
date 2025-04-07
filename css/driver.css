@@ -1,8 +1,3 @@
-You can update the CSS to arrange the forms in a column with a small gap between them,
-and wrap the forms inside a box with circular edges. Here's the updated CSS:
-
-```css
-
 /* Reset and Global Styles */
 * {
     margin: 0;
@@ -81,7 +76,7 @@ nav a:hover {
     border-radius: 15px;
     /* Circular edges */
     width: 80%;
-    /* Adjust width to ensure it’s centered and not too wide */
+    /* Adjust width to ensure it's centered and not too wide */
     max-width: 600px;
     /* Maximum width */
     margin-left: auto;
@@ -163,7 +158,8 @@ footer {
     padding: 10px;
     margin-top: 20px;
 }
-/* driver.css */
+
+/* Button styles */
 .btn {
     padding: 10px 15px;
     border: none;
@@ -217,4 +213,134 @@ textarea {
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
+}
+
+/* Active Ride Section */
+.active-ride {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.no-ride {
+    padding: 20px;
+    background: #e9ecef;
+    border-radius: 5px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.ride-details {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.ride-info {
+    margin-bottom: 15px;
+}
+
+.ride-info h3 {
+    margin-bottom: 10px;
+    color: #343a40;
+}
+
+.ride-info p {
+    margin: 8px 0;
+    padding: 8px;
+    background: #fff;
+    border-radius: 4px;
+}
+
+.ride-actions {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.ride-actions button {
+    flex: 1;
+    min-width: 120px;
+}
+
+.ride-actions button i {
+    margin-right: 5px;
+}
+
+.ride-progress h4 {
+    margin-bottom: 10px;
+    color: #343a40;
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    background: #e9ecef;
+    position: relative;
+    font-size: 0.85em;
+}
+
+.step.active {
+    background: #007bff;
+    color: white;
+}
+
+.step:not(:last-child):after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -10px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid #e9ecef;
+    z-index: 2;
+}
+
+.step.active:not(:last-child):after {
+    border-left-color: #007bff;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .progress-steps {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .step:not(:last-child):after {
+        display: none;
+    }
+
+    .ride-actions {
+        flex-direction: column;
+    }
+
+    .profile,
+    .vehicle-info,
+    .active-ride,
+    .availability-status,
+    .ongoing-trip {
+        width: 95%;
+    }
 }

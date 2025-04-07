@@ -1,23 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
 import { 
-  getFirestore, doc, updateDoc, onSnapshot, serverTimestamp,
-  collection, query, where, addDoc, getDocs, orderBy, limit
+    getFirestore, doc, updateDoc, onSnapshot, serverTimestamp,
+    collection, query, where, addDoc, getDocs, orderBy, limit, getDoc
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { 
-  getAuth, onAuthStateChanged, signOut 
+    getAuth, onAuthStateChanged, signOut 
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 
-// Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBUX5vcK2c3XzFvIGc2aTf4j5ECYtNT1Mk",
-  authDomain: "resq-linker-project.firebaseapp.com",
-  projectId: "resq-linker-project",
-  storageBucket: "resq-linker-project.appspot.com",
-  messagingSenderId: "561153672211",
-  appId: "1:561153672211:web:4415adc6c4cba3997cabe6"
+    apiKey: "AIzaSyBUX5vcK2c3XzFvIGc2aTf4j5ECYtNT1Mk",
+    authDomain: "resq-linker-project.firebaseapp.com",
+    projectId: "resq-linker-project",
+    storageBucket: "resq-linker-project.appspot.com",
+    messagingSenderId: "561153672211",
+    appId: "1:561153672211:web:4415adc6c4cba3997cabe6"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -34,6 +32,7 @@ const statusSelect = document.getElementById('status');
 const completeBtn = document.getElementById('complete-btn');
 const historyTable = document.getElementById('history-table').getElementsByTagName('tbody')[0];
 const currentTimeSpan = document.getElementById('current-time');
+const emergenciesList = document.getElementById('emergencies-list');
 
 // Current user and hospital reference
 let currentHospitalId = null;
@@ -49,19 +48,12 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Setup dashboard functionality
 function setupDashboard() {
-    // Update current time every second
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
-
-    // Listen for new emergency requests
     listenForEmergencyRequests();
-
-    // Setup button event listeners
+    setupEmergencyListener();
     setupEventListeners();
-
-    // Load emergency history
     loadEmergencyHistory();
 }
 
@@ -71,13 +63,13 @@ function updateCurrentTime() {
 }
 
 function listenForEmergencyRequests() {
-    const q = query(
-        collection(db, "emergencies"),
+    const emergenciesQuery = query(
+        collection(db, "Emergencies"),
         where("status", "==", "pending"),
-        where("assignedHospitalId", "==", currentHospitalId)
+        where("hospitalId", "==", currentHospitalId)
     );
     
-    onSnapshot(q, (snapshot) => {
+    onSnapshot(emergenciesQuery, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
                 const emergency = change.doc.data();
@@ -86,6 +78,93 @@ function listenForEmergencyRequests() {
                 enableButtons(true);
             }
         });
+    }, (error) => {
+        showError("Error listening for emergency requests: " + error.message);
+    });
+}
+
+function setupEmergencyListener() {
+    const q = query(
+        collection(db, "Emergencies"),
+        where("status", "in", ["en_route", "arrived"]),
+        where("hospitalId", "==", currentHospitalId)
+    );
+    
+    onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                addEmergencyToDashboard(change.doc.data());
+            } else if (change.type === "modified") {
+                updateEmergencyStatus(change.doc.data());
+            }
+        });
+    }, (error) => {
+        showError("Error listening for emergency updates: " + error.message);
+    });
+}
+
+function addEmergencyToDashboard(emergency) {
+    const emergencyCard = document.createElement('div');
+    emergencyCard.className = 'emergency-card';
+    emergencyCard.id = `emergency-${emergency.id}`;
+    emergencyCard.innerHTML = `
+        <h3>${emergency.condition} (${emergency.severity})</h3>
+        <p>Patient: ${emergency.patientName}</p>
+        <p>Symptoms: ${emergency.symptoms}</p>
+        <p>Driver ETA: <span class="eta">Calculating...</span></p>
+        <div class="actions">
+            <button class="prepare-btn">Prepare for Arrival</button>
+        </div>
+    `;
+    emergenciesList.appendChild(emergencyCard);
+    
+    const prepareBtn = emergencyCard.querySelector('.prepare-btn');
+    prepareBtn.addEventListener('click', () => {
+        prepareForEmergency(emergency.id);
+    });
+    
+    trackEmergencyDriver(emergency.driverId, emergency.id);
+}
+
+function trackEmergencyDriver(driverId, emergencyId) {
+    const driverRef = doc(db, "Drivers", driverId);
+    
+    onSnapshot(driverRef, (doc) => {
+        if (doc.exists() && doc.data().currentLocation) {
+            updateEmergencyETA(emergencyId, doc.data().currentLocation);
+        }
+    }, (error) => {
+        showError("Error tracking driver: " + error.message);
+    });
+}
+
+function updateEmergencyETA(emergencyId, driverLocation) {
+    const etaElement = document.querySelector(`#emergency-${emergencyId} .eta`);
+    if (etaElement) {
+        const now = new Date();
+        const estimatedMinutes = Math.floor(Math.random() * 15) + 5;
+        const eta = new Date(now.getTime() + estimatedMinutes * 60000);
+        etaElement.textContent = `${estimatedMinutes} min (approx. ${eta.toLocaleTimeString()})`;
+    }
+}
+
+function prepareForEmergency(emergencyId) {
+    updateDoc(doc(db, "Emergencies", emergencyId), {
+        hospitalPrepared: true,
+        preparedTime: serverTimestamp()
+    })
+    .then(() => {
+        showNotification(`Hospital prepared for emergency #${emergencyId}`);
+        const card = document.querySelector(`#emergency-${emergencyId}`);
+        if (card) {
+            card.classList.add('prepared');
+            const prepareBtn = card.querySelector('.prepare-btn');
+            prepareBtn.textContent = 'Prepared';
+            prepareBtn.disabled = true;
+        }
+    })
+    .catch(error => {
+        showError(`Error preparing for emergency: ${error.message}`);
     });
 }
 
@@ -106,25 +185,15 @@ function enableButtons(enabled) {
 }
 
 function setupEventListeners() {
-    // Accept emergency
-    acceptBtn.addEventListener('click', () => {
-        updateEmergencyStatus('accepted');
-    });
-
-    // Reject emergency
+    acceptBtn.addEventListener('click', () => updateEmergencyStatus('accepted'));
     rejectBtn.addEventListener('click', () => {
         updateEmergencyStatus('rejected');
         resetEmergencyUI();
     });
-
-    // Update status
     statusForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const status = statusSelect.value;
-        updateEmergencyStatus(status);
+        updateEmergencyStatus(statusSelect.value);
     });
-
-    // Complete emergency
     completeBtn.addEventListener('click', () => {
         updateEmergencyStatus('completed');
         addToHistory();
@@ -132,17 +201,31 @@ function setupEventListeners() {
     });
 }
 
-async function updateEmergencyStatus(status) {
-    if (!currentEmergencyId) return;
-
-    try {
-        await updateDoc(doc(db, "emergencies", currentEmergencyId), {
-            status: status,
-            lastUpdated: serverTimestamp()
-        });
-        console.log('Status updated successfully');
-    } catch (error) {
-        console.error('Error updating status:', error);
+async function updateEmergencyStatus(statusOrEmergency) {
+    if (typeof statusOrEmergency === 'object') {
+        const emergency = statusOrEmergency;
+        const card = document.querySelector(`#emergency-${emergency.id}`);
+        if (card) {
+            const statusIndicator = card.querySelector('h3');
+            if (statusIndicator) {
+                statusIndicator.textContent = `${emergency.condition} (${emergency.severity}) - ${emergency.status}`;
+            }
+            if (emergency.status === 'arrived') {
+                card.classList.add('arrived');
+                showNotification(`Emergency has arrived at the hospital!`);
+            }
+        }
+    } else if (currentEmergencyId) {
+        const status = statusOrEmergency;
+        try {
+            await updateDoc(doc(db, "Emergencies", currentEmergencyId), {
+                status: status,
+                lastUpdated: serverTimestamp()
+            });
+            showNotification(`Status updated to: ${status}`);
+        } catch (error) {
+            showError("Error updating status: " + error.message);
+        }
     }
 }
 
@@ -150,7 +233,7 @@ async function addToHistory() {
     if (!currentEmergencyId) return;
 
     try {
-        const emergencyDoc = await getDoc(doc(db, "emergencies", currentEmergencyId));
+        const emergencyDoc = await getDoc(doc(db, "Emergencies", currentEmergencyId));
         if (emergencyDoc.exists()) {
             const emergency = emergencyDoc.data();
             await addDoc(collection(db, "hospitals", currentHospitalId, "history"), {
@@ -160,39 +243,43 @@ async function addToHistory() {
                 status: 'completed',
                 condition: emergency.condition
             });
-            console.log('Added to history');
+            showNotification("Emergency case added to history");
         }
     } catch (error) {
-        console.error('Error adding to history:', error);
+        showError("Error adding to history: " + error.message);
     }
 }
 
 async function loadEmergencyHistory() {
     try {
-        const q = query(
+        const historyQuery = query(
             collection(db, "hospitals", currentHospitalId, "history"),
             orderBy("timestamp", "desc"),
             limit(5)
         );
         
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(historyQuery);
         
+        historyTable.innerHTML = '';
         if (querySnapshot.empty) {
+            const row = historyTable.insertRow();
+            row.insertCell(0).textContent = "No recent cases";
+            row.insertCell(1).textContent = "";
+            row.insertCell(2).textContent = "";
+            row.insertCell(3).textContent = "";
             return;
         }
 
-        historyTable.innerHTML = ''; // Clear existing rows
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const row = historyTable.insertRow();
-            
             row.insertCell(0).textContent = doc.id.substring(0, 8);
             row.insertCell(1).textContent = data.patientName;
             row.insertCell(2).textContent = data.timestamp.toDate().toLocaleString();
             row.insertCell(3).textContent = data.status;
         });
     } catch (error) {
-        console.error('Error loading history:', error);
+        showError("Error loading history: " + error.message);
     }
 }
 
@@ -204,7 +291,6 @@ function resetEmergencyUI() {
     statusSelect.value = '';
 }
 
-// Logout functionality
 document.querySelector('.logout').addEventListener('click', (e) => {
     e.preventDefault();
     signOut(auth).then(() => {
@@ -212,7 +298,6 @@ document.querySelector('.logout').addEventListener('click', (e) => {
     });
 });
 
-// Notification functions
 function showNotification(message) {
     const notification = document.createElement('div');
     notification.className = 'notification';

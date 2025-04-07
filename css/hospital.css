@@ -244,3 +244,41 @@ footer {
         padding: 1rem;
     }
 }
+.emergency-card {
+    background-color: #f8f9fa;
+    border-left: 4px solid #dc3545;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.emergency-card.prepared {
+    border-left-color: #28a745;
+}
+
+.emergency-card.arrived {
+    border-left-color: #007bff;
+    background-color: #e9f5ff;
+}
+
+.emergency-card h3 {
+    margin-top: 0;
+}
+
+.emergency-card .actions {
+    margin-top: 10px;
+}
+
+.emergency-card .prepare-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.emergency-card .prepare-btn:disabled {
+    background-color: #28a745;
+}

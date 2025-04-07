@@ -1,7 +1,6 @@
-// driver.js - Complete Implementation
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
 import { 
-  getFirestore, doc, getDoc, updateDoc, onSnapshot,
+  getFirestore, doc, getDoc, updateDoc, onSnapshot, setDoc,
   collection, query, where, getDocs, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { 
@@ -62,6 +61,7 @@ async function handleAuthStateChange(user) {
   currentDriver = user;
   await loadDriverData(user.uid);
   setupRealTimeUpdates(user.uid);
+  setupRideRequestListener(); // Add ride request listener
   startLocationTracking(user.uid);
 }
 
@@ -250,6 +250,97 @@ function setupRealTimeUpdates(driverId) {
   });
 }
 
+// Setup ride request listener
+function setupRideRequestListener() {
+  const q = query(
+    collection(db, "RideRequests"),
+    where("driverId", "==", currentDriver.uid),
+    where("status", "==", "pending")
+  );
+  
+  onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        showRideRequest(change.doc.id, change.doc.data());
+      }
+    });
+  });
+}
+
+// Show ride request modal
+function showRideRequest(requestId, request) {
+  const modal = document.getElementById('request-modal');
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h3>New Ride Request</h3>
+      <p>Patient is requesting assistance</p>
+      <div class="patient-info">
+        <p>Location: ${request.patientLocation.address || 'Unknown location'}</p>
+      </div>
+      <div class="action-buttons">
+        <button class="accept-btn">Accept</button>
+        <button class="reject-btn">Reject</button>
+      </div>
+    </div>
+  `;
+  
+  modal.style.display = 'block';
+  
+  // Add event listeners
+  modal.querySelector('.accept-btn').addEventListener('click', () => {
+    acceptRideRequest(requestId);
+    modal.style.display = 'none';
+  });
+  
+  modal.querySelector('.reject-btn').addEventListener('click', () => {
+    rejectRideRequest(requestId);
+    modal.style.display = 'none';
+  });
+}
+
+// Accept ride request
+async function acceptRideRequest(requestId) {
+  try {
+    const batch = writeBatch(db);
+    
+    // Update request status
+    batch.update(doc(db, "RideRequests", requestId), {
+      status: "accepted",
+      respondedAt: serverTimestamp()
+    });
+    
+    // Update driver status
+    batch.update(doc(db, "Drivers", currentDriver.uid), {
+      availability: false,
+      status: "on_ride"
+    });
+    
+    await batch.commit();
+    showNotification("Ride accepted. Please proceed to patient location.");
+  } catch (error) {
+    handleError(error, "Failed to accept ride");
+  }
+}
+
+// Reject ride request
+async function rejectRideRequest(requestId) {
+  try {
+    await updateDoc(doc(db, "RideRequests", requestId), {
+      status: "rejected",
+      respondedAt: serverTimestamp()
+    });
+    showNotification("Ride request declined.", "info");
+  } catch (error) {
+    handleError(error, "Failed to reject ride");
+  }
+}
+
+// Handle errors
+function handleError(error, message) {
+  console.error(message, error);
+  showError(`${message}: ${error.message}`);
+}
+
 // Handle logout
 async function handleLogout() {
   try {
@@ -262,20 +353,16 @@ async function handleLogout() {
 }
 
 // Helper functions
-function showNotification(message) {
+function showNotification(message, type = "success") {
   const notification = document.createElement('div');
-  notification.className = 'notification';
+  notification.className = `notification ${type}`;
   notification.textContent = message;
   document.body.appendChild(notification);
   setTimeout(() => notification.remove(), 3000);
 }
 
 function showError(message) {
-  const error = document.createElement('div');
-  error.className = 'notification error';
-  error.textContent = message;
-  document.body.appendChild(error);
-  setTimeout(() => error.remove(), 3000);
+  showNotification(message, "error");
 }
 
 // Initialize the application

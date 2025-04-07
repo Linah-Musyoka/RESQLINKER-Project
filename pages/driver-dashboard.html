@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Driver Dashboard</title>
     <link rel="stylesheet" href="../css/driver.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
@@ -57,20 +58,46 @@
             </form>
         </section>
 
-        <!-- Active Ride Section -->
+        <!-- Optimized Active Ride Section -->
         <section class="active-ride">
             <h2>Active Ride</h2>
-            <form id="active-ride-form">
-                <label for="pickup-location">Pickup Location:</label>
-                <input type="text" id="pickup-location" name="pickup-location" placeholder="Enter pickup location"
-                    required>
-
-                <label for="passenger-name">Passenger Name:</label>
-                <input type="text" id="passenger-name" name="passenger-name" placeholder="Enter passenger's name"
-                    required>
-
-                <button type="submit" class="btn">Update Active Ride</button>
-            </form>
+            <div id="ride-status-container">
+                <!-- Default state when no active ride -->
+                <div class="no-ride" id="no-active-ride">
+                    <p>No active ride assigned</p>
+                    <p>You'll be notified when a request comes in</p>
+                </div>
+                <!-- Only appears when ride is active -->
+                <div class="ride-details" id="active-ride-details" style="display:none;">
+                    <div class="ride-info">
+                        <h3>Emergency Details</h3>
+                        <p><strong>Patient:</strong> <span id="active-ride-patient">Loading...</span></p>
+                        <p><strong>Condition:</strong> <span id="active-ride-condition">Loading...</span></p>
+                        <p><strong>Pickup Location:</strong> <span id="active-ride-location">Loading...</span></p>
+                        <p><strong>Hospital:</strong> <span id="active-ride-hospital">Loading...</span></p>
+                    </div>
+                    <div class="ride-actions">
+                        <button id="navigate-btn" class="btn">
+                            <i class="fas fa-map-marked-alt"></i> Start Navigation
+                        </button>
+                        <button id="arrived-btn" class="btn">
+                            <i class="fas fa-flag-checkered"></i> Mark as Arrived
+                        </button>
+                        <button id="complete-btn" class="btn">
+                            <i class="fas fa-check-circle"></i> Complete Ride
+                        </button>
+                    </div>
+                    <div class="ride-progress">
+                        <h4>Progress</h4>
+                        <div class="progress-steps">
+                            <div class="step active">Request Accepted</div>
+                            <div class="step">En Route</div>
+                            <div class="step">Patient Picked Up</div>
+                            <div class="step">Arrived at Hospital</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Availability Status Section -->
@@ -97,6 +124,9 @@
             <button id="notify-patient-btn" class="btn">Notify Patient of Arrival</button>
         </section>
     </main>
+
+    <!-- Request Modal -->
+    <div id="request-modal" class="modal"></div>
 
     <footer>
         <p>&copy; 2025 RESQLINKER Service</p>
